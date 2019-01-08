@@ -1,1 +1,5 @@
 .DS_Store
+/cars_train
+/cars_test
+/cars_val
+/devkit
