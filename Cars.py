@@ -18,6 +18,7 @@ from keras.optimizers import SGD, RMSprop, Adam
 from keras.applications.vgg16 import VGG16
 from keras.models import model_from_json
 
+
 import time
 import datetime
 
