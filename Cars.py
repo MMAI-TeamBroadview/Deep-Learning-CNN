@@ -10,12 +10,13 @@ from pickle import load
 
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
-from keras.layers import Conv2D, MaxPooling2D, Dropout, Flatten, Dense
+from keras.layers import Conv2D, MaxPooling2D, Dropout, Flatten, Dense, GlobalAveragePooling2D
 from keras.layers.normalization import BatchNormalization
 from keras import callbacks
 from keras.optimizers import SGD, RMSprop, Adam
 
 from keras.applications.vgg16 import VGG16
+from keras.applications.inception_v3 import InceptionV3
 from keras.models import model_from_json
 
 
@@ -32,6 +33,7 @@ meta_path = '/devkit/'
 train_path = '/cars_train/'
 test_path = '/cars_test/'
 val_path = '/cars_val/'
+
 
 # ===========================================================================================
 
@@ -230,6 +232,46 @@ def VGG16model(dropout, img_height, img_width, optimizer, trainable = False):
 
     return model
 
+def InceptionV3model(dropout, img_height, img_width, optimizer, trainable = False):
+    '''
+    Transfer Learning with InceptionV3 - adding two fully connected layers after InceptionV3 for training
+    '''
+    model = Sequential()
+
+    model_inception = InceptionV3(weights='imagenet', include_top=False, input_shape=(img_height, img_width, 3))
+
+    for layer in enumerate(model_inception.layers):
+        layer[1].trainable = False
+
+    model.add(model_inception)
+    model.add(GlobalAveragePooling2D())
+
+    # fully-connected layers
+    model.add(Dense(4096, activation='relu', kernel_initializer='random_uniform',bias_initializer='random_uniform'))
+    model.add(Dropout(dropout))
+
+    model.add(Dense(4096, activation='relu', kernel_initializer='random_uniform', bias_initializer='random_uniform'))
+    model.add(Dropout(dropout))
+
+    # logistic layer - all car classes
+    model.add(Dense(196, activation='softmax',
+                    kernel_initializer='random_uniform',
+                    bias_initializer='random_uniform'))
+
+    model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+
+    print('-----Inception Layers-----')
+    for layer in enumerate(model_inception.layers):
+        print(layer[1].trainable)
+    print('-----Model Layers-----')
+    for layer in enumerate(model.layers):
+        print(layer[1].trainable)
+
+    model_inception.summary()
+    model.summary()
+
+    return model
+
 ##Save History and Model (incl Weights)
 def save_hist_model_w(model, history, model_name):
     # Save History file
@@ -338,7 +380,8 @@ learning rate = 0.0001, 0.001 (default)
 train_generator, test_generator = data_generator(train_path, test_path, batch_size, img_height, img_width)
 
 #model =  standardConvNet(dropout, img_height, img_width, sgd)
-model = VGG16model(dropout,img_height, img_width, sgd, False)
+#model = VGG16model(dropout,img_height, img_width, sgd, False)
+model = InceptionV3model(dropout,img_height, img_width, rms, False)
 
 earlystop = callbacks.EarlyStopping(monitor='val_loss', patience=earlystop_patience)
 
