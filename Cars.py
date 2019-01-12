@@ -197,7 +197,7 @@ earlystop = 10
 
 train_generator, test_generator = data_generator(train_path, test_path, batch_size, img_height, img_width)
 
-model = VGG16SArchitecture(0.5,img_height, img_width)
+model = standardConvNet(0.5,img_height, img_width)
 model.summary()
 
 earlystop = callbacks.EarlyStopping(monitor='val_loss', patience=10)
