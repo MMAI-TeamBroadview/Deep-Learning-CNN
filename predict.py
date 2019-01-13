@@ -1,16 +1,10 @@
-'''
-Created on 10 lut 2018
 
-@author: mgdak
-'''
 import warnings
 warnings.filterwarnings("ignore")
 from keras.preprocessing.image import ImageDataGenerator
 from keras.optimizers import SGD
 from keras.models import model_from_json
 import numpy as np
-
-
 
 #Allows to load model and weights saved from pretrained model (VGG16)
 def load_hist_model_w (model_name):
@@ -24,9 +18,8 @@ def load_hist_model_w (model_name):
     # load weights into new model
     loaded_model.load_weights(model_name+ '_train_w.h5')
     print("Loaded model from disk")
-
+    
     return loaded_model
-
 
 #Basic Configuration settings    
 img_width, img_height = 224, 224
@@ -56,7 +49,6 @@ sgd = SGD(lr=learn_rate, decay=1e-4, momentum=0.9, nesterov=True)
 
 #Compile Model
 loaded_model.compile(optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])
-
 
 score = loaded_model.predict_generator(test_generator, verbose=1,steps=num_samples/batch_size)
 predicted_class_indices=np.argmax(score,axis=1)
