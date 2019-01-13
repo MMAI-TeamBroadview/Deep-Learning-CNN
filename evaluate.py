@@ -1,17 +1,9 @@
-'''
-Created on 10 lut 2018
-
-Run Evaluation % on final evaulatino of the model for accuracy.
-'''
 import warnings
 warnings.filterwarnings("ignore")
 from keras.preprocessing.image import ImageDataGenerator
 from keras.optimizers import SGD
 from keras.models import model_from_json
 import numpy as np
-
-
-
 
 def load_hist_model_w (model_name):
 
@@ -27,13 +19,11 @@ def load_hist_model_w (model_name):
 
     return loaded_model
 
-
-
-
 #Basic configuration settings.
 img_width, img_height = 224, 224
 batch_size = 16
 test_path = '/Users/dk_macpro/Documents/cars/val/'
+
 #Using the model VGG16_SGD_Unlocked_NoReg_NoInit, LR 0.0003
 model_name = "VGG16_SGD_UnLocked_NoReg_NoInit2_lr"
 learn_rate = 0.0003
