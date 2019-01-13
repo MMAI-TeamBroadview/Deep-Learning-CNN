@@ -14,11 +14,10 @@ from keras.layers import Conv2D, MaxPooling2D, Dropout, Flatten, Dense, GlobalAv
 from keras.layers.normalization import BatchNormalization
 from keras import callbacks
 from keras.optimizers import SGD, RMSprop, Adam
-
+from keras import regularizers
 from keras.applications.vgg16 import VGG16
 from keras.applications.inception_v3 import InceptionV3
 from keras.models import model_from_json
-
 
 import time
 import datetime
@@ -87,7 +86,6 @@ def organize_data (df, path):
         sh.move(path + row['fname'], path + row['name'] + '/' + row['fname'])
     print('Move Complete!')
 
-
 def split_test_data (test_path, val_path):
     '''
     This method splits the test data in to test and val sets (~50/50 split)
@@ -111,9 +109,8 @@ def split_test_data (test_path, val_path):
             class_counter += 1
     print(class_counter, ' classes processed')
     print(move_counter + skip_counter, ' files processed')
-    print('>', move_counter, ' files moved to cars_val')
+    print('>', move_counter, ' files moved')
     print('>', skip_counter, ' files skipped')
-
 
 def data_generator(train_path, test_path, batch_size, img_height, img_width):
     '''
@@ -135,12 +132,11 @@ def data_generator(train_path, test_path, batch_size, img_height, img_width):
                                                         target_size=(img_height, img_width),
                                                         batch_size=batch_size,
                                                         class_mode='categorical')
-    test_generator = test_datagen.flow_from_directory(test_path,
+    test_generator = test_datagen.flow_from_directory(val_path,
                                                        target_size=(img_height, img_width),
                                                        batch_size=batch_size,
                                                        class_mode='categorical')
     return train_generator, test_generator
-
 
 # Standard CNN Architecture
 def standardConvNet(dropout, img_height, img_width, optimizer):
@@ -184,7 +180,7 @@ def standardConvNet(dropout, img_height, img_width, optimizer):
 
     return model
 
-def VGG16model(dropout, img_height, img_width, optimizer, trainable = False):
+def VGG16model(dropout, img_height, img_width, optimizer, regularizer, trainable = False):
     '''
     Transfer Learning with VGG16 - adding two fully connected layers after VGG16 for training
     '''
@@ -216,6 +212,7 @@ def VGG16model(dropout, img_height, img_width, optimizer, trainable = False):
     model.add(Dense(196, activation='softmax',
                     kernel_initializer='random_uniform',
                     bias_initializer='random_uniform',
+                    #bias_regularizer = regularizer, #uncomment to add regularization
                     name='predictions'))
 
     model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
@@ -272,7 +269,7 @@ def InceptionV3model(dropout, img_height, img_width, optimizer, trainable = Fals
 
     return model
 
-##Save History and Model (incl Weights)
+# Save History and Model (incl Weights)
 def save_hist_model_w(model, history, model_name):
     # Save History file
     with open('history_' + model_name + '_pickle', 'wb') as file_pi:
@@ -287,7 +284,7 @@ def save_hist_model_w(model, history, model_name):
     model.save_weights(model_name + '_train_w.h5')
     print("Saved model to disk")
 
-
+# Load History and Model (incl Weights)
 def load_hist_model_w (model_name):
     #Load History file
     with open('history_' +model_name +'_pickle', 'rb') as handle: # loading old history
@@ -305,6 +302,7 @@ def load_hist_model_w (model_name):
 
     return savedHistory, loaded_model
 
+# Plot history and save images
 def plotHistory(history2, model_name):
     print('a')
     loss_list = [s for s in history2.history.keys() if 'loss' in s and 'val' not in s]
@@ -358,16 +356,15 @@ def plotHistory(history2, model_name):
 # organize_data(test, test_path)
 # split_test_data(test_path, val_path)
 
-
-img_width, img_height = 224, 224
+img_width, img_height = 224, 224 #change to 299,299 for imagenet
 batch_size = 16
-epochs = 100
+epochs = 150
 earlystop_patience = 10
 sgd = SGD(lr=0.001, decay=1e-4, momentum=0.9, nesterov=True)
 rms = RMSprop(decay=1e-4, lr=0.001)
 adam = Adam()
 dropout = 0.5
-# regularizer = regularizers.l2(0.01)
+regularizer = regularizers.l2(0.01)
 
 '''
 Parameters to Change:
@@ -380,7 +377,7 @@ learning rate = 0.0001, 0.001 (default)
 train_generator, test_generator = data_generator(train_path, test_path, batch_size, img_height, img_width)
 
 #model =  standardConvNet(dropout, img_height, img_width, sgd)
-#model = VGG16model(dropout,img_height, img_width, sgd, False)
+#model = VGG16model(dropout,img_height, img_width, sgd, regularizer, False)
 model = InceptionV3model(dropout,img_height, img_width, rms, False)
 
 earlystop = callbacks.EarlyStopping(monitor='val_loss', patience=earlystop_patience)
